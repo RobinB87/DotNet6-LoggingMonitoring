@@ -33,6 +33,8 @@ public class ProductLogic : IProductLogic
 
     public Product? GetProductById(int id)
     {
+        _logger.LogDebug("Logic for single product ({id})", id);
+
         return _repo.GetProductById(id);
     }
 }
