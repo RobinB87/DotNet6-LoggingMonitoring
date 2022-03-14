@@ -6,10 +6,10 @@ using Microsoft.Extensions.Logging;
 
 namespace CarvedRock.Data
 {
-    public class CarvedRockRepository :ICarvedRockRepository
+    public class CarvedRockRepository : ICarvedRockRepository
     {
         private readonly LocalContext _ctx;
-        private readonly ILogger<CarvedRockRepository> _logger;        
+        private readonly ILogger<CarvedRockRepository> _logger;
         private readonly ILogger _factoryLogger;
 
         public CarvedRockRepository(LocalContext ctx, ILogger<CarvedRockRepository> logger,
@@ -33,7 +33,17 @@ namespace CarvedRock.Data
                 throw new SqliteException("Simulated fatal database error occurred!", 551);
             }
 
-            return await _ctx.Products.Where(p => p.Category == category || category == "all").ToListAsync();
+            try
+            {
+                return await _ctx.Products.Where(p => p.Category == category || category == "all").ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                var newEx = new ApplicationException("Something bad happened in the database", ex);
+                newEx.Data.Add("Category", category);
+
+                throw newEx;
+            }
         }
 
         public async Task<Product?> GetProductByIdAsync(int id)
@@ -48,19 +58,19 @@ namespace CarvedRock.Data
 
         public Product? GetProductById(int id)
         {
-            var timer = new Stopwatch();  
+            var timer = new Stopwatch();
             timer.Start();
-            
+
             var product = _ctx.Products.Find(id);
             timer.Stop();
 
-            _logger.LogDebug("Querying products for {id} finished in {milliseconds} milliseconds", 
-                id, timer.ElapsedMilliseconds);	 
+            _logger.LogDebug("Querying products for {id} finished in {milliseconds} milliseconds",
+                id, timer.ElapsedMilliseconds);
 
-            _factoryLogger.LogInformation("(F) Querying products for {id} finished in {ticks} ticks", 
-                id, timer.ElapsedTicks);           
+            _factoryLogger.LogInformation("(F) Querying products for {id} finished in {ticks} ticks",
+                id, timer.ElapsedTicks);
 
             return product;
-        }       
+        }
     }
 }
