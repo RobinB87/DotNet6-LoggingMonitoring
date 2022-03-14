@@ -1,29 +1,37 @@
-﻿using CarvedRock.Data.Entities;
+﻿using System.Diagnostics;
+using CarvedRock.Data.Entities;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace CarvedRock.Data
 {
-    public class CarvedRockRepository : ICarvedRockRepository
+    public class CarvedRockRepository :ICarvedRockRepository
     {
         private readonly LocalContext _ctx;
-        private readonly ILogger<CarvedRockRepository> _logger;
-        private readonly ILogger _loggerFactory;
+        private readonly ILogger<CarvedRockRepository> _logger;        
+        private readonly ILogger _factoryLogger;
 
-        // Normally, you would never use both ILogger and ILoggerFactory
         public CarvedRockRepository(LocalContext ctx, ILogger<CarvedRockRepository> logger,
             ILoggerFactory loggerFactory)
         {
             _ctx = ctx;
             _logger = logger;
-
-            // Create logger with custom category, instead of CarvedRock.Data
-            _loggerFactory = loggerFactory.CreateLogger("DataAccessLayer");
+            _factoryLogger = loggerFactory.CreateLogger("DataAccessLayer");
         }
         public async Task<List<Product>> GetProductsAsync(string category)
         {
             _logger.LogInformation("Getting products in repository for {category}", category);
+            if (category == "clothing")
+            {
+                var ex = new ApplicationException("Database error occurred!!");
+                ex.Data.Add("Category", category);
+                throw ex;
+            }
+            if (category == "equip")
+            {
+                throw new SqliteException("Simulated fatal database error occurred!", 551);
+            }
 
             return await _ctx.Products.Where(p => p.Category == category || category == "all").ToListAsync();
         }
@@ -40,20 +48,19 @@ namespace CarvedRock.Data
 
         public Product? GetProductById(int id)
         {
-            var timer = new Stopwatch();
+            var timer = new Stopwatch();  
             timer.Start();
-
+            
             var product = _ctx.Products.Find(id);
             timer.Stop();
 
             _logger.LogDebug("Querying products for {id} finished in {milliseconds} milliseconds", 
-                id, timer.ElapsedMilliseconds);
+                id, timer.ElapsedMilliseconds);	 
 
-            _loggerFactory.LogInformation("(F) Querying products for {id} finished in {ticks} ticks", 
-                id, timer.ElapsedTicks);
-
+            _factoryLogger.LogInformation("(F) Querying products for {id} finished in {ticks} ticks", 
+                id, timer.ElapsedTicks);           
 
             return product;
-        }
+        }       
     }
 }
