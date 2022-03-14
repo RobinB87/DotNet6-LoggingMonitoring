@@ -9,11 +9,17 @@ namespace CarvedRock.Data
     {
         private readonly LocalContext _ctx;
         private readonly ILogger<CarvedRockRepository> _logger;
+        private readonly ILogger _loggerFactory;
 
-        public CarvedRockRepository(LocalContext ctx, ILogger<CarvedRockRepository> logger)
+        // Normally, you would never use both ILogger and ILoggerFactory
+        public CarvedRockRepository(LocalContext ctx, ILogger<CarvedRockRepository> logger,
+            ILoggerFactory loggerFactory)
         {
             _ctx = ctx;
             _logger = logger;
+
+            // Create logger with custom category, instead of CarvedRock.Data
+            _loggerFactory = loggerFactory.CreateLogger("DataAccessLayer");
         }
         public async Task<List<Product>> GetProductsAsync(string category)
         {
@@ -40,7 +46,12 @@ namespace CarvedRock.Data
             var product = _ctx.Products.Find(id);
             timer.Stop();
 
-            _logger.LogDebug("Querying products for {id} finished in {milliseconds} milliseconds", id, timer.ElapsedMilliseconds);
+            _logger.LogDebug("Querying products for {id} finished in {milliseconds} milliseconds", 
+                id, timer.ElapsedMilliseconds);
+
+            _loggerFactory.LogInformation("(F) Querying products for {id} finished in {ticks} ticks", 
+                id, timer.ElapsedTicks);
+
 
             return product;
         }
