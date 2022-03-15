@@ -1,7 +1,19 @@
 using CarvedRock.Data;
 using CarvedRock.Domain;
+using Hellang.Middleware.ProblemDetails;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddProblemDetails(o =>
+{
+    o.IncludeExceptionDetails = (ctx, ex) => false;
+    o.OnBeforeWriteDetails = (ctx, dtls) =>
+    {
+        if (dtls.Status == 500)
+        {
+            dtls.Detail = "An error occurred in our API. Use the trace id when contacting us.";
+        }
+    };
+});
 
 // Example of adding log filter by code
 builder.Logging.AddFilter("CarvedRock", LogLevel.Debug);
@@ -25,6 +37,7 @@ builder.Services.AddDbContext<LocalContext>();
 builder.Services.AddScoped<ICarvedRockRepository, CarvedRockRepository>();
 
 var app = builder.Build();
+app.UseProblemDetails();
 
 using (var scope = app.Services.CreateScope())
 {
