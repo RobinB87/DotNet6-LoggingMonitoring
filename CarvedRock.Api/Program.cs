@@ -1,6 +1,8 @@
+using CarvedRock.Api;
 using CarvedRock.Data;
 using CarvedRock.Domain;
 using Hellang.Middleware.ProblemDetails;
+using Microsoft.Data.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddProblemDetails(o =>
@@ -13,6 +15,8 @@ builder.Services.AddProblemDetails(o =>
             dtls.Detail = "An error occurred in our API. Use the trace id when contacting us.";
         }
     };
+    o.Rethrow<SqliteException>();
+    o.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
 });
 
 // Example of adding log filter by code
@@ -37,6 +41,7 @@ builder.Services.AddDbContext<LocalContext>();
 builder.Services.AddScoped<ICarvedRockRepository, CarvedRockRepository>();
 
 var app = builder.Build();
+app.UseMiddleware<CriticalExceptionMiddleware>();
 app.UseProblemDetails();
 
 using (var scope = app.Services.CreateScope())
