@@ -1,26 +1,30 @@
-using CarvedRock.Api;
+using System.IdentityModel.Tokens.Jwt;
 using CarvedRock.Data;
 using CarvedRock.Domain;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.Data.Sqlite;
+using CarvedRock.Api;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddProblemDetails(o =>
+builder.Services.AddProblemDetails(opts => 
 {
-    o.IncludeExceptionDetails = (ctx, ex) => false;
-    o.OnBeforeWriteDetails = (ctx, dtls) =>
-    {
+    opts.IncludeExceptionDetails = (ctx, ex) => false;
+    
+    opts.OnBeforeWriteDetails = (ctx, dtls) => {
         if (dtls.Status == 500)
         {
             dtls.Detail = "An error occurred in our API. Use the trace id when contacting us.";
         }
-    };
-    o.Rethrow<SqliteException>();
-    o.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
+    }; 
+    opts.Rethrow<SqliteException>(); 
+    opts.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
 });
 
 // Example of adding log filter by code
-builder.Logging.AddFilter("CarvedRock", LogLevel.Debug);
+//builder.Logging.AddFilter("CarvedRock", LogLevel.Debug);
 
 // Create log file:
 //var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
@@ -29,20 +33,29 @@ builder.Logging.AddFilter("CarvedRock", LogLevel.Debug);
 //Trace.Listeners.Add(new TextWriterTraceListener(System.IO.File.CreateText(tracePath)));
 //Trace.AutoFlush = true;
 
-// Services
+JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.Authority = "https://demo.duendesoftware.com";
+        options.Audience = "api";
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            NameClaimType = "email"
+        };
+    });
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, SwaggerOptions>();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IProductLogic, ProductLogic>();
-
 builder.Services.AddDbContext<LocalContext>();
 builder.Services.AddScoped<ICarvedRockRepository, CarvedRockRepository>();
 
 var app = builder.Build();
-app.UseMiddleware<CriticalExceptionMiddleware>();
-app.UseProblemDetails();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -51,15 +64,23 @@ using (var scope = app.Services.CreateScope())
     context.MigrateAndCreateData();
 }
 
-// HTTP request pipeline
+app.UseMiddleware<CriticalExceptionMiddleware>();
+app.UseProblemDetails();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.OAuthClientId("interactive.public.short");
+        options.OAuthAppName("CarvedRock API");
+        options.OAuthUsePkce();
+    });
 }
 app.MapFallback(() => Results.Redirect("/swagger"));
 app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapControllers().RequireAuthorization();
 
 app.Run();
