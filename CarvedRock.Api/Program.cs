@@ -9,6 +9,14 @@ using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// remove all providers
+builder.Logging.ClearProviders();
+
+// now manually add providers
+builder.Logging.AddJsonConsole();
+builder.Logging.AddDebug(); // this shows the debug entries again
+
 builder.Services.AddProblemDetails(opts => 
 {
     opts.IncludeExceptionDetails = (ctx, ex) => false;
