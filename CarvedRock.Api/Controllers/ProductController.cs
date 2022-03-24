@@ -22,10 +22,14 @@ public class ProductController : ControllerBase
     {
         var userName = User.Identity?.IsAuthenticated ?? false ? User.Identity.Name : "";
 
-        _logger.LogInformation(CarvedRockEvents.GettingProducts, 
-            "Getting products in API for {category} and {user}", category, userName);
+        using (_logger.BeginScope("ScopeUser: {ScopeUser}, ScopeCat: {ScopeCat}", userName, category))
+        {
+            _logger.LogInformation(CarvedRockEvents.GettingProducts,
+                "Getting products in API for {category} and {user}", category, userName);
 
-        return await _productLogic.GetProductsForCategoryAsync(category);
+            return await _productLogic.GetProductsForCategoryAsync(category);
+        }
+
         //return _productLogic.GetProductsForCategory(category);
     }
 
