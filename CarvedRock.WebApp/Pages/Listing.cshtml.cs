@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace CarvedRock.WebApp.Pages
 {
-    public class ListingModel : PageModel
+    public partial class ListingModel : PageModel
     {
         private readonly HttpClient _apiClient;
         private readonly ILogger<ListingModel> _logger;
         private readonly HttpContext? _httpCtx;
+        [LoggerMessage(0, LogLevel.Warning, "SourceGenerated: API failure: {fullPath} Response: {statusCode}, Trace: {traceId}")]
+        partial void LogApiFailure(string fullPath, int statusCode, string traceId);
 
         public ListingModel(HttpClient apiClient, ILogger<ListingModel> logger, IHttpContextAccessor httpContextAccessor)
         {
@@ -49,10 +51,9 @@ namespace CarvedRock.WebApp.Pages
                   new ProblemDetails();
                 var traceId = details.Extensions["traceId"]?.ToString();
 
-                var userName = User.Identity?.IsAuthenticated ?? false ? User.Identity.Name : "";
-
-                _logger.LogWarning("API failure: {fullPath} Response: {apiResponse}, Trace: {trace}, User: {user}",
-                  fullPath, (int) response.StatusCode, traceId, userName);        
+                LogApiFailure(fullPath, (int)response.StatusCode, traceId ?? "");
+                //_logger.LogWarning("API failure: {fullPath} Response: {apiResponse}, Trace: {trace}, User: {user}",
+                //  fullPath, (int) response.StatusCode, traceId);        
 
                 throw new Exception("API call failed!");
             }

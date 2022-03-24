@@ -6,11 +6,18 @@ namespace CarvedRock.Api.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ProductController : ControllerBase
+public partial class ProductController : ControllerBase
 {
     private readonly ILogger<ProductController> _logger;
     private readonly IProductLogic _productLogic;
 
+    // if you have very high performance requirements, you can use source generators
+    // this uses a compiled template rather than parsed/cached
+    // to use this, you create a PARTIAL void method with params to log (class needs to become partial as well)
+    // LoggerMessage attribute on this method to trigger the source generator
+    [LoggerMessage(CarvedRockEvents.GettingProducts, LogLevel.Information, 
+        "SourceGenerated: Getting products in API.")]
+    partial void LogGettingProducts();
     public ProductController(ILogger<ProductController> logger, IProductLogic productLogic)
     {
         _logger = logger;
@@ -22,7 +29,8 @@ public class ProductController : ControllerBase
     {
         using (_logger.BeginScope("ScopeCat: {ScopeCat}", category))
         {
-            _logger.LogInformation(CarvedRockEvents.GettingProducts, "Getting products in API");
+            //_logger.LogInformation(CarvedRockEvents.GettingProducts, "Getting products in API");
+            LogGettingProducts();
             return await _productLogic.GetProductsForCategoryAsync(category);
         }
 
