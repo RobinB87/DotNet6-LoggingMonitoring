@@ -1,7 +1,17 @@
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Exceptions;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+
+builder.Host.UseSerilog((ContextBoundObject, loggerConfig) =>
+{
+    loggerConfig.WriteTo.Console()
+    .Enrich.WithExceptionDetails()
+    .WriteTo.Seq("http://localhost:5341");
+});
 
 //// Configure http logging
 //builder.Services.AddHttpLogging(logging =>

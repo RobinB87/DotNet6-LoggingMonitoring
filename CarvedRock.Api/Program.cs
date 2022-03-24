@@ -1,12 +1,14 @@
-using System.IdentityModel.Tokens.Jwt;
+using CarvedRock.Api;
 using CarvedRock.Data;
 using CarvedRock.Domain;
 using Hellang.Middleware.ProblemDetails;
 using Microsoft.Data.Sqlite;
-using CarvedRock.Api;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
+using Serilog.Exceptions;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.IdentityModel.Tokens.Jwt;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,20 +16,30 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 
 // now manually add providers
-builder.Logging.AddJsonConsole();
-builder.Logging.AddDebug(); // this shows the debug entries again
+//builder.Logging.AddJsonConsole();
+// builder.Logging.AddDebug(); // this shows the debug entries again
 
-builder.Services.AddProblemDetails(opts => 
+// run seq by:
+// docker run --name seq -d --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:80 datalust/seq:latest
+builder.Host.UseSerilog((ContextBoundObject, loggerConfig) =>
+{
+    loggerConfig.WriteTo.Console()
+    .Enrich.WithExceptionDetails()
+    .WriteTo.Seq("http://localhost:5341");
+});
+
+builder.Services.AddProblemDetails(opts =>
 {
     opts.IncludeExceptionDetails = (ctx, ex) => false;
-    
-    opts.OnBeforeWriteDetails = (ctx, dtls) => {
+
+    opts.OnBeforeWriteDetails = (ctx, dtls) =>
+    {
         if (dtls.Status == 500)
         {
             dtls.Detail = "An error occurred in our API. Use the trace id when contacting us.";
         }
-    }; 
-    opts.Rethrow<SqliteException>(); 
+    };
+    opts.Rethrow<SqliteException>();
     opts.MapToStatusCode<Exception>(StatusCodes.Status500InternalServerError);
 });
 
