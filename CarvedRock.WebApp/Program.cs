@@ -63,6 +63,9 @@ builder.Services.AddAuthentication(options =>
 });
 builder.Services.AddHttpContextAccessor();
 
+// Health checks
+builder.Services.AddHealthChecks();
+
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
 
@@ -81,5 +84,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages().RequireAuthorization();
+
+// Map health checks, order is important, give a name / endpoint you want
+// => https://localhost:7224/health
+app.MapHealthChecks("health").AllowAnonymous();
 
 app.Run();
