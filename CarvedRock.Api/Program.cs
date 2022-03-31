@@ -6,6 +6,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.IdentityModel.Tokens.Jwt;
@@ -27,6 +28,8 @@ builder.Host.UseSerilog((context, loggerConfig) =>
     .ReadFrom.Configuration(context.Configuration)
     .WriteTo.Console()
     .Enrich.WithExceptionDetails()
+    .Enrich.FromLogContext()
+    .Enrich.With<ActivityEnricher>()
     .WriteTo.Seq("http://localhost:5341");
 });
 
