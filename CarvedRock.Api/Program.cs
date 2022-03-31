@@ -18,7 +18,10 @@ builder.Logging.ClearProviders();
 
 // now manually add providers
 //builder.Logging.AddJsonConsole();
-// builder.Logging.AddDebug(); // this shows the debug entries again
+//builder.Logging.AddDebug(); // this shows the debug entries again
+
+// Go to Azure Application Insights and run new query eg: traces
+//builder.Services.AddApplicationInsightsTelemetry();
 
 // run seq by:
 // docker run --name seq -d --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:80 datalust/seq:latest
