@@ -5,6 +5,8 @@ using Hellang.Middleware.ProblemDetails;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Enrichers.Span;
 using Serilog.Exceptions;
@@ -35,6 +37,20 @@ builder.Host.UseSerilog((context, loggerConfig) =>
     .Enrich.FromLogContext()
     .Enrich.With<ActivityEnricher>()
     .WriteTo.Seq("http://localhost:5341");
+});
+
+// To let Jaeger instance listen on port 4317:
+// docker run --name jaeger -p 13133:13133 -p 16686:16686 -p 4317:55680 -d --restart=unless-stopped jaegertracing/opentelemetry-all-in-one
+//   health check is exposed on port 13133
+//   ui is on port 16686 (use this in browser to see it)
+//   export endpoint on 4317, where we send traces from our app
+builder.Services.AddOpenTelemetryTracing(b =>
+{
+    b.SetResourceBuilder(
+        ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName))
+    .AddAspNetCoreInstrumentation()
+    .AddEntityFrameworkCoreInstrumentation()
+    .AddOtlpExporter(o => { o.Endpoint = new Uri("http://localhost:4317"); });
 });
 
 builder.Services.AddProblemDetails(opts =>

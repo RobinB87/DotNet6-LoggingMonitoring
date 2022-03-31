@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Exceptions;
 using System.IdentityModel.Tokens.Jwt;
@@ -7,11 +9,20 @@ using System.IdentityModel.Tokens.Jwt;
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.ClearProviders();
 
-builder.Host.UseSerilog((ContextBoundObject, loggerConfig) =>
+builder.Host.UseSerilog((context, loggerConfig) =>
 {
     loggerConfig.WriteTo.Console()
     .Enrich.WithExceptionDetails()
     .WriteTo.Seq("http://localhost:5341");
+});
+
+builder.Services.AddOpenTelemetryTracing(b =>
+{
+    b.SetResourceBuilder(
+        ResourceBuilder.CreateDefault().AddService(builder.Environment.ApplicationName))
+    .AddAspNetCoreInstrumentation()
+    .AddHttpClientInstrumentation()
+    .AddOtlpExporter(o => { o.Endpoint = new Uri("http://localhost:4317"); });
 });
 
 //// Configure http logging
