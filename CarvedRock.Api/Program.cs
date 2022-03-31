@@ -21,6 +21,7 @@ builder.Logging.ClearProviders();
 //builder.Logging.AddDebug(); // this shows the debug entries again
 
 // Go to Azure Application Insights and run new query eg: traces
+// Or eg watch traceability with application map or transaction search
 //builder.Services.AddApplicationInsightsTelemetry();
 
 // run seq by:
