@@ -21,9 +21,11 @@ builder.Logging.ClearProviders();
 
 // run seq by:
 // docker run --name seq -d --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:80 datalust/seq:latest
-builder.Host.UseSerilog((ContextBoundObject, loggerConfig) =>
+builder.Host.UseSerilog((context, loggerConfig) =>
 {
-    loggerConfig.WriteTo.Console()
+    loggerConfig
+    .ReadFrom.Configuration(context.Configuration)
+    .WriteTo.Console()
     .Enrich.WithExceptionDetails()
     .WriteTo.Seq("http://localhost:5341");
 });
